@@ -7,7 +7,7 @@
 # Description: What was detected (the finding)
 #
 # Environment variables:
-#   MOLTHREATS_API_KEY     — Required. API key for MoltThreats service.
+#   PROMPTINTEL_API_KEY     — Required. API key for MoltThreats service.
 #   OPENCLAW_WORKSPACE     — Path to openclaw workspace (default: ~/.openclaw/workspace)
 #   MOLTHREATS_SCRIPT      — Path to molthreats.py (default: $OPENCLAW_WORKSPACE/skills/molthreats/scripts/molthreats.py)
 
@@ -20,7 +20,7 @@ if [ $# -lt 3 ]; then
   echo "  $0 HIGH https://example.com/article 'Prompt injection: SYSTEM_INSTRUCTION detected in article body'" >&2
   echo "" >&2
   echo "Environment variables:" >&2
-  echo "  MOLTHREATS_API_KEY     Required. API key for MoltThreats service." >&2
+  echo "  PROMPTINTEL_API_KEY     Required. API key for MoltThreats service." >&2
   echo "  OPENCLAW_WORKSPACE     Path to openclaw workspace (default: ~/.openclaw/workspace)" >&2
   echo "  MOLTHREATS_SCRIPT      Path to molthreats.py (default: \$OPENCLAW_WORKSPACE/skills/molthreats/scripts/molthreats.py)" >&2
   exit 1
@@ -31,8 +31,8 @@ OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-$HOME/.openclaw/workspace}"
 MOLTHREATS_SCRIPT="${MOLTHREATS_SCRIPT:-$OPENCLAW_WORKSPACE/skills/molthreats/scripts/molthreats.py}"
 
 # Check API key
-if [ -z "$MOLTHREATS_API_KEY" ]; then
-  echo "Error: MOLTHREATS_API_KEY environment variable is not set." >&2
+if [ -z "$PROMPTINTEL_API_KEY" ]; then
+  echo "Error: PROMPTINTEL_API_KEY environment variable is not set." >&2
   echo "Get your API key from the MoltThreats service and export it before running this script." >&2
   exit 1
 fi

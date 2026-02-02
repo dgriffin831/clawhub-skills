@@ -21,6 +21,8 @@ import sys
 import json
 import base64
 import argparse
+import os
+import subprocess
 from dataclasses import dataclass, asdict
 from typing import Optional, List, Dict, Any
 from enum import Enum
@@ -45,6 +47,29 @@ class ScanResult:
         d = asdict(self)
         d["severity"] = self.severity.name
         return d
+
+
+ALERT_SEVERITY_ORDER = {"SAFE": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+
+
+def send_alert(message: str) -> bool:
+    """Send an alert via OpenClaw if configured."""
+    channel = os.environ.get("OPENCLAW_ALERT_CHANNEL")
+    if not channel:
+        print("⚠️ OPENCLAW_ALERT_CHANNEL not set; alert not sent.", file=sys.stderr)
+        return False
+
+    cmd = ["openclaw", "message", "send", "--channel", channel, "--message", message]
+    target = os.environ.get("OPENCLAW_ALERT_TO")
+    if target:
+        cmd += ["--target", target]
+
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except Exception as e:
+        print(f"⚠️ Failed to send alert: {e}", file=sys.stderr)
+        return False
 
 
 # =============================================================================
@@ -185,7 +210,7 @@ DANGEROUS_COMMANDS = [
 AUTHORITY_IMPERSONATION = [
     (r"i\s+am\s+(the\s+)?(admin|administrator|owner|developer|creator|maintainer)", "authority_impersonation", Severity.HIGH),
     (r"(as\s+)?(the\s+)?(admin|owner|developer),?\s+i\s+(need|want|require|demand)", "authority_impersonation", Severity.HIGH),
-    (r"i('m|\s+am)\s+(your\s+)?(creator|developer|owner|admin|boss|manager)", "authority_impersonation", Severity.HIGH),
+    (r"i('m|\s+am)\s+(your\s+)?(creator|developer|owner|admin|boss|manager|maintainer|technician)", "authority_impersonation", Severity.HIGH),
     (r"authorized\s+(by|from)\s+(the\s+)?(owner|admin|developer|system)", "authority_impersonation", Severity.HIGH),
 
     # Korean
@@ -259,10 +284,16 @@ JSON_INJECTION = [
 
 # Prompt extraction attempts
 PROMPT_EXTRACTION = [
-    (r"(repeat|echo|print|output|display|show)\s*.{0,20}(system\s+)?(prompt|instruction|directive|rule)", "prompt_extraction", Severity.CRITICAL),
+    (r"(repeat|echo|print|output|display|show|put|list|share|give|provide)\s*.{0,20}(system\s+)?(prompt|instruction|directive|rule)", "prompt_extraction", Severity.CRITICAL),
     (r"(what|show|tell|reveal)\s*.{0,15}(are\s+)?(your|the)\s+(system\s+)?(instructions?|rules?|prompt|guidelines?)", "prompt_extraction", Severity.CRITICAL),
     (r"(copy|paste|write)\s*.{0,15}(exact|verbatim|word.for.word)", "prompt_extraction", Severity.HIGH),
     (r"(summarize|describe|explain)\s*.{0,15}(how\s+)?(you\s+)?(were?\s+)?(programmed|trained|instructed|created)", "prompt_extraction", Severity.HIGH),
+    (r"(repeat|echo|print|output)\s*.{0,20}(words?|text)\s+(above|before|preceding)", "prompt_extraction", Severity.HIGH),
+    (r"verbatim\s+from\s+(your|the)\s+(prompt|instructions?|rules?|guidelines?)", "prompt_extraction", Severity.HIGH),
+    (r"(share|give|provide|show)\s*.{0,15}(your\s+)?(configuration|config|settings)\b", "prompt_extraction", Severity.HIGH),
+    (r"(foundational|initial|original)\s+(system\s+)?(prompts?|instructions?)", "prompt_extraction", Severity.HIGH),
+    # Chinese prompt extraction
+    (r"(输出|显示|分享|提供|给出)\s*.{0,10}(初始|系统|原始)\s*(配置|指令|提示|设置|规则)", "prompt_extraction_zh", Severity.CRITICAL),
 ]
 
 
@@ -460,6 +491,25 @@ def main():
                        default="medium", help="Detection sensitivity")
     parser.add_argument("--quiet", "-q", action="store_true", help="Only output severity and score")
 
+    # LLM scanning options
+    parser.add_argument("--llm", action="store_true",
+                       help="Enable LLM-based analysis (uses configured LLM provider)")
+    parser.add_argument("--llm-only", action="store_true",
+                       help="Run ONLY LLM analysis (skip pattern matching)")
+    parser.add_argument("--llm-provider", choices=["openai", "anthropic"],
+                       help="Force specific LLM provider")
+    parser.add_argument("--llm-model", help="Force specific model name")
+    parser.add_argument("--llm-timeout", type=int, default=30,
+                       help="LLM API timeout in seconds (default: 30)")
+    parser.add_argument("--llm-auto", action="store_true",
+                       help="Auto-escalate to LLM if pattern scan finds MEDIUM+ severity")
+
+    # Alerting options
+    parser.add_argument("--alert", action="store_true",
+                       help="Send alert via OpenClaw channel if severity meets threshold")
+    parser.add_argument("--alert-threshold", choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+                       default="MEDIUM", help="Minimum severity to trigger alert (default: MEDIUM)")
+
     args = parser.parse_args()
 
     # Get text
@@ -478,10 +528,140 @@ def main():
         print("✅ SAFE — Empty input.")
         sys.exit(0)
 
+    use_llm = args.llm or args.llm_only or args.llm_auto
+
+    # ---------------------------------------------------------------
+    # LLM-only mode: skip pattern matching entirely
+    # ---------------------------------------------------------------
+    if args.llm_only:
+        try:
+            from llm_scanner import scan_with_llm, SEVERITY_ORDER
+        except ImportError:
+            print("❌ LLM scanner module not found. Ensure llm_scanner.py is in the same directory.", file=sys.stderr)
+            sys.exit(1)
+
+        llm_result = scan_with_llm(
+            text,
+            provider=args.llm_provider,
+            model=args.llm_model,
+            timeout=args.llm_timeout,
+        )
+        if llm_result is None:
+            print("❌ No LLM provider available. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.", file=sys.stderr)
+            sys.exit(1)
+
+        if args.json:
+            out = {
+                "severity": llm_result.severity,
+                "score": {"SAFE": 0, "LOW": 15, "MEDIUM": 40, "HIGH": 70, "CRITICAL": 95}.get(llm_result.severity, 0),
+                "mode": "llm-only",
+                "llm": {
+                    "verdict": llm_result.verdict,
+                    "confidence": llm_result.confidence,
+                    "severity": llm_result.severity,
+                    "threats": llm_result.threats,
+                    "reasoning": llm_result.reasoning,
+                    "model": llm_result.model,
+                    "latency_ms": llm_result.latency_ms,
+                    "tokens_used": llm_result.tokens_used,
+                },
+            }
+            print(json.dumps(out, indent=2, ensure_ascii=False))
+        elif args.quiet:
+            score = {"SAFE": 0, "LOW": 15, "MEDIUM": 40, "HIGH": 70, "CRITICAL": 95}.get(llm_result.severity, 0)
+            print(f"{llm_result.severity} {score}")
+        else:
+            emoji = {"SAFE": "✅", "LOW": "📝", "MEDIUM": "⚠️", "HIGH": "🔴", "CRITICAL": "🚨"}.get(llm_result.severity, "❓")
+            print(f"{emoji} {llm_result.severity} — {llm_result.verdict} (confidence: {llm_result.confidence:.0%}) [LLM: {llm_result.model}]")
+            if llm_result.threats:
+                print(f"\nThreats ({len(llm_result.threats)}):")
+                for t in llm_result.threats:
+                    print(f"  • [{t.get('category', '?')}] {t.get('threat_type', '?')}")
+                    print(f"    {t.get('description', '')}")
+                    if t.get("evidence"):
+                        print(f"    Evidence: \"{t['evidence'][:120]}\"")
+            print(f"\nReasoning: {llm_result.reasoning}")
+            print(f"Latency: {llm_result.latency_ms}ms | Tokens: {llm_result.tokens_used}")
+
+        if args.alert:
+            alert_score = {"SAFE": 0, "LOW": 15, "MEDIUM": 40, "HIGH": 70, "CRITICAL": 95}.get(llm_result.severity, 0)
+            alert_sev_val = ALERT_SEVERITY_ORDER.get(llm_result.severity, 0)
+            alert_threshold = ALERT_SEVERITY_ORDER.get(args.alert_threshold, 2)
+            if alert_sev_val >= alert_threshold:
+                msg = "\n".join([
+                    "Input-Guard Alert",
+                    f"Severity: {llm_result.severity}",
+                    f"Score: {alert_score}/100",
+                    "Mode: llm-only",
+                    f"Verdict: {llm_result.verdict} ({llm_result.confidence:.0%})",
+                    f"Findings: {len(llm_result.threats)}",
+                ])
+                send_alert(msg)
+
+        sev_val = SEVERITY_ORDER.get(llm_result.severity, 0)
+        sys.exit(0 if sev_val <= 1 else 1)
+
+    # ---------------------------------------------------------------
+    # Standard mode: pattern scan (+ optional LLM layer)
+    # ---------------------------------------------------------------
     result = scan(text, args.sensitivity)
 
+    # Determine if LLM scan should run
+    run_llm = args.llm  # Explicit --llm always runs
+    if args.llm_auto and result.severity.value >= Severity.MEDIUM.value:
+        run_llm = True  # Auto-escalate on MEDIUM+
+
+    llm_analysis = None
+    if run_llm:
+        try:
+            from llm_scanner import scan_with_llm, merge_results as llm_merge, SEVERITY_ORDER
+            llm_result = scan_with_llm(
+                text,
+                provider=args.llm_provider,
+                model=args.llm_model,
+                timeout=args.llm_timeout,
+            )
+            if llm_result and llm_result.verdict != "ERROR":
+                merged = llm_merge(
+                    result.severity.name,
+                    result.score,
+                    result.findings,
+                    llm_result,
+                )
+                # Update result with merged data
+                result = ScanResult(
+                    severity=Severity[merged["severity"]],
+                    score=merged["score"],
+                    findings=merged["findings"],
+                    summary="",  # Will regenerate below
+                )
+                llm_analysis = merged.get("llm_analysis")
+
+                # Regenerate summary
+                if result.severity == Severity.SAFE:
+                    result.summary = "✅ SAFE — No prompt injection detected. [pattern+LLM]"
+                elif result.severity == Severity.LOW:
+                    result.summary = f"📝 LOW — {len(result.findings)} finding(s). Likely benign. [pattern+LLM]"
+                elif result.severity == Severity.MEDIUM:
+                    result.summary = f"⚠️ MEDIUM — {len(result.findings)} finding(s). Possible manipulation. [pattern+LLM]"
+                elif result.severity == Severity.HIGH:
+                    result.summary = f"🔴 HIGH — {len(result.findings)} finding(s). Likely prompt injection. [pattern+LLM]"
+                else:
+                    result.summary = f"🚨 CRITICAL — {len(result.findings)} finding(s). Active injection attack! [pattern+LLM]"
+            elif llm_result:
+                llm_analysis = {"error": llm_result.reasoning}
+        except ImportError:
+            llm_analysis = {"error": "LLM scanner module not found"}
+        except Exception as e:
+            llm_analysis = {"error": str(e)}
+
+    # Output
     if args.json:
-        print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+        out = result.to_dict()
+        out["mode"] = "pattern+llm" if run_llm else "pattern"
+        if llm_analysis:
+            out["llm"] = llm_analysis
+        print(json.dumps(out, indent=2, ensure_ascii=False))
     elif args.quiet:
         print(f"{result.severity.name} {result.score}")
     else:
@@ -489,9 +669,41 @@ def main():
         if result.findings:
             print(f"\nFindings ({len(result.findings)}):")
             for f in result.findings:
-                sev_emoji = {"LOW": "📝", "MEDIUM": "⚠️", "HIGH": "🔴", "CRITICAL": "🚨"}.get(f["severity"], "❓")
-                print(f"  {sev_emoji} [{f['severity']}] {f['category']}: {f['detail']}")
+                sev = f.get("severity", "?")
+                if isinstance(sev, Severity):
+                    sev = sev.name
+                sev_emoji = {"LOW": "📝", "MEDIUM": "⚠️", "HIGH": "🔴", "CRITICAL": "🚨"}.get(sev, "❓")
+                cat = f.get("category", "Unknown")
+                detail = f.get("detail", "")
+                evidence = f.get("evidence", "")
+                print(f"  {sev_emoji} [{sev}] {cat}: {detail}")
+                if evidence:
+                    print(f"       Evidence: \"{evidence[:120]}\"")
+
+        if llm_analysis and not llm_analysis.get("error"):
+            print(f"\n🤖 LLM Analysis ({llm_analysis.get('model', '?')}):")
+            print(f"   Verdict: {llm_analysis.get('verdict')} (confidence: {llm_analysis.get('confidence', 0):.0%})")
+            print(f"   Reasoning: {llm_analysis.get('reasoning', 'N/A')}")
+            print(f"   Latency: {llm_analysis.get('latency_ms', 0)}ms | Tokens: {llm_analysis.get('tokens_used', 0)}")
+        elif llm_analysis and llm_analysis.get("error"):
+            print(f"\n⚠️ LLM scan failed: {llm_analysis['error']}")
+
         print(f"\nSeverity: {result.severity.name} | Score: {result.score}/100")
+
+    if args.alert:
+        sev_name = result.severity.name
+        alert_sev_val = ALERT_SEVERITY_ORDER.get(sev_name, 0)
+        alert_threshold = ALERT_SEVERITY_ORDER.get(args.alert_threshold, 2)
+        if alert_sev_val >= alert_threshold:
+            mode = "pattern+llm" if run_llm else "pattern"
+            msg = "\n".join([
+                "Input-Guard Alert",
+                f"Severity: {sev_name}",
+                f"Score: {result.score}/100",
+                f"Mode: {mode}",
+                f"Findings: {len(result.findings)}",
+            ])
+            send_alert(msg)
 
     # Exit code: 0 for SAFE/LOW, 1 for MEDIUM+
     sys.exit(0 if result.severity.value <= Severity.LOW.value else 1)

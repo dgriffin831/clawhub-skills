@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Guardrails Configuration",
+  "description": "Schema for guardrails-config.json",
+  "type": "object",
+  "required": ["version", "generated", "discovery", "classification", "answers"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Config schema version"
+    },
+    "generated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when config was generated"
+    },
+    "discovery": {
+      "type": "object",
+      "description": "Environment discovery data",
+      "properties": {
+        "timestamp": {"type": "string", "format": "date-time"},
+        "workspace": {"type": "string"},
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "description": {"type": "string"},
+              "path": {"type": "string"}
+            }
+          }
+        },
+        "workspaceFiles": {"type": "object"},
+        "channels": {"type": "array"},
+        "integrations": {"type": "array"},
+        "existing": {"type": "object"}
+      }
+    },
+    "classification": {
+      "type": "object",
+      "description": "Risk classification results",
+      "$ref": "risks.schema.json"
+    },
+    "answers": {
+      "type": "object",
+      "description": "User's answers from interactive interview",
+      "properties": {
+        "identity": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "timezone": {"type": "string"},
+            "preferences": {"type": "string"}
+          }
+        },
+        "deletionPolicy": {
+          "type": "string",
+          "enum": ["always-ask", "ask-unless-temp", "allowed-with-confirmation", "prefer-archive"]
+        },
+        "externalCommsPolicy": {
+          "type": "string",
+          "enum": ["never", "drafts-only", "ask-each-time", "trusted-channels"]
+        },
+        "trustedChannels": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "sensitiveDataPolicy": {
+          "type": "object",
+          "properties": {
+            "restrictedPaths": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "sensitiveTypes": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "dataExfiltrationPolicy": {
+          "type": "string",
+          "enum": ["private-only", "trusted-endpoints", "ask-each-time", "allowed-with-logging"]
+        },
+        "trustedUploadEndpoints": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "groupChatPolicy": {
+          "type": "string",
+          "enum": ["no-personal-data", "minimal", "normal", "full"]
+        },
+        "writeContainmentPolicy": {
+          "type": "object",
+          "properties": {
+            "restricted": {"type": "boolean"},
+            "allowedPaths": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "apiKeyAccess": {
+          "type": "string",
+          "enum": ["allowed", "selective", "never"]
+        },
+        "apiKeyServices": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "financialSkillsPolicy": {
+          "type": "string",
+          "enum": ["blocked", "analysis-only", "confirm-each", "none"]
+        },
+        "systemModificationPolicy": {
+          "type": "string",
+          "enum": ["never", "always-ask", "safe-only", "allowed-with-logging"]
+        },
+        "vmSnapshotPolicy": {
+          "type": "string",
+          "enum": ["never", "ask-first", "auto-only", "confirm"]
+        },
+        "emailDeletionPolicy": {
+          "type": "string",
+          "enum": ["archive-only", "spam-only", "ask-first", "confirm"]
+        },
+        "twitterPostingPolicy": {
+          "type": "string",
+          "enum": ["drafts-only", "ask-each", "scheduled-only", "with-review"]
+        },
+        "driveRestrictedFolders": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "driveWritePolicy": {
+          "type": "string",
+          "enum": ["openclaw-folder", "designated-folders", "anywhere-confirm", "unrestricted"]
+        },
+        "memoryRetention": {
+          "type": "string",
+          "enum": ["30d", "90d", "1y", "forever"]
+        },
+        "sensitiveDataLogging": {
+          "type": "string",
+          "enum": ["redact", "minimal", "unrestricted"]
+        },
+        "browserAutomationPolicy": {
+          "type": "string",
+          "enum": ["read-only", "forms-confirm", "full", "block-auth"]
+        },
+        "codeExecutionPolicy": {
+          "type": "string",
+          "enum": ["sandbox-only", "ask-first", "safe-commands", "full-logged"]
+        },
+        "subagentInheritance": {
+          "type": "string",
+          "enum": ["full", "partial", "minimal", "custom"]
+        },
+        "violationNotification": {
+          "type": "string",
+          "enum": ["block-notify", "block-log", "warn-ask", "log-only"]
+        },
+        "monitoringFrequency": {
+          "type": "string",
+          "enum": ["daily", "weekly", "on-install", "manual"]
+        },
+        "incidentReporting": {
+          "type": "string",
+          "enum": ["full", "critical-only", "summary", "none"]
+        },
+        "skillPolicies": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "allowed": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "blocked": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "notes": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

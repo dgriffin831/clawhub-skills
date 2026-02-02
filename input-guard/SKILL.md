@@ -44,6 +44,12 @@ bash {baseDir}/scripts/scan.sh --json "text to check"
 
 # Quiet mode (just severity + score)
 bash {baseDir}/scripts/scan.sh --quiet "text to check"
+
+# Send alert via configured OpenClaw channel on MEDIUM+
+OPENCLAW_ALERT_CHANNEL=slack bash {baseDir}/scripts/scan.sh --alert "text to check"
+
+# Alert only on HIGH/CRITICAL
+OPENCLAW_ALERT_CHANNEL=slack bash {baseDir}/scripts/scan.sh --alert --alert-threshold HIGH "text to check"
 ```
 
 ## Severity Levels
@@ -77,6 +83,94 @@ bash {baseDir}/scripts/scan.sh --quiet "text to check"
 python3 {baseDir}/scripts/scan.py --sensitivity high "text to check"
 ```
 
+## LLM-Powered Scanning
+
+Input Guard can optionally use an LLM as a **second analysis layer** to catch evasive
+attacks that pattern-based scanning misses (metaphorical framing, storytelling-based
+jailbreaks, indirect instruction extraction, etc.).
+
+### How It Works
+
+1. Loads the **MoltThreats LLM Security Threats Taxonomy** (ships as `taxonomy.json`, refreshes from API when `PROMPTINTEL_API_KEY` is set)
+2. Builds a specialized detector prompt using the taxonomy categories, threat types, and examples
+3. Sends the suspicious text to the LLM for semantic analysis
+4. Merges LLM results with pattern-based findings for a combined verdict
+
+### LLM Flags
+
+| Flag | Description |
+|------|-------------|
+| `--llm` | Always run LLM analysis alongside pattern scan |
+| `--llm-only` | Skip patterns, run LLM analysis only |
+| `--llm-auto` | Auto-escalate to LLM only if pattern scan finds MEDIUM+ |
+| `--llm-provider` | Force provider: `openai` or `anthropic` |
+| `--llm-model` | Force a specific model (e.g. `gpt-4o`, `claude-sonnet-4-5`) |
+| `--llm-timeout` | API timeout in seconds (default: 30) |
+
+### Examples
+
+```bash
+# Full scan: patterns + LLM
+python3 {baseDir}/scripts/scan.py --llm "suspicious text"
+
+# LLM-only analysis (skip pattern matching)
+python3 {baseDir}/scripts/scan.py --llm-only "suspicious text"
+
+# Auto-escalate: patterns first, LLM only if MEDIUM+
+python3 {baseDir}/scripts/scan.py --llm-auto "suspicious text"
+
+# Force Anthropic provider
+python3 {baseDir}/scripts/scan.py --llm --llm-provider anthropic "text"
+
+# JSON output with LLM analysis
+python3 {baseDir}/scripts/scan.py --llm --json "text"
+
+# LLM scanner standalone (testing)
+python3 {baseDir}/scripts/llm_scanner.py "text to analyze"
+python3 {baseDir}/scripts/llm_scanner.py --json "text"
+```
+
+### Merge Logic
+
+- LLM can **upgrade** severity (catches things patterns miss)
+- LLM can **downgrade** severity one level if confidence ≥ 80% (reduces false positives)
+- LLM threats are added to findings with `[LLM]` prefix
+- Pattern findings are **never discarded** (LLM might be tricked itself)
+
+### Taxonomy Cache
+
+The MoltThreats taxonomy ships as `taxonomy.json` in the skill root (works offline).
+When `PROMPTINTEL_API_KEY` is set, it refreshes from the API (at most once per 24h).
+
+```bash
+python3 {baseDir}/scripts/get_taxonomy.py fetch   # Refresh from API
+python3 {baseDir}/scripts/get_taxonomy.py show    # Display taxonomy
+python3 {baseDir}/scripts/get_taxonomy.py prompt  # Show LLM reference text
+python3 {baseDir}/scripts/get_taxonomy.py clear   # Delete local file
+```
+
+### Provider Detection
+
+Auto-detects in order:
+1. `OPENAI_API_KEY` → Uses `gpt-4o-mini` (cheapest, fastest)
+2. `ANTHROPIC_API_KEY` → Uses `claude-sonnet-4-5`
+
+### Cost & Performance
+
+| Metric | Pattern Only | Pattern + LLM |
+|--------|-------------|---------------|
+| Latency | <100ms | 2-5 seconds |
+| Token cost | 0 | ~2,000 tokens/scan |
+| Evasion detection | Regex-based | Semantic understanding |
+| False positive rate | Higher | Lower (LLM confirms) |
+
+### When to Use LLM Scanning
+
+- **`--llm`**: High-stakes content, manual deep scans
+- **`--llm-auto`**: Automated workflows (confirms pattern findings cheaply)
+- **`--llm-only`**: Testing LLM detection, analyzing evasive samples
+- **Default (no flag)**: Real-time filtering, bulk scanning, cost-sensitive
+
 ### Output Modes
 
 ```bash
@@ -91,9 +185,16 @@ python3 {baseDir}/scripts/scan.py --quiet "text to check"
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `MOLTHREATS_API_KEY` | Yes | — | API key for MoltThreats service |
+| `PROMPTINTEL_API_KEY` | Yes | — | API key for MoltThreats service |
 | `OPENCLAW_WORKSPACE` | No | `~/.openclaw/workspace` | Path to openclaw workspace |
 | `MOLTHREATS_SCRIPT` | No | `$OPENCLAW_WORKSPACE/skills/molthreats/scripts/molthreats.py` | Path to molthreats.py |
+
+### Environment Variables (Alerts)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `OPENCLAW_ALERT_CHANNEL` | No | — | Channel name configured in OpenClaw for alerts |
+| `OPENCLAW_ALERT_TO` | No | — | Optional recipient/target for channels that require one |
 
 ## Integration Pattern
 
@@ -266,13 +367,13 @@ Report confirmed prompt injection threats to the MoltThreats community database 
 ### Prerequisites
 
 - The **molthreats** skill installed in your workspace
-- A valid `MOLTHREATS_API_KEY` (export it in your environment)
+- A valid `PROMPTINTEL_API_KEY` (export it in your environment)
 
 ### Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `MOLTHREATS_API_KEY` | Yes | — | API key for MoltThreats service |
+| `PROMPTINTEL_API_KEY` | Yes | — | API key for MoltThreats service |
 | `OPENCLAW_WORKSPACE` | No | `~/.openclaw/workspace` | Path to openclaw workspace |
 | `MOLTHREATS_SCRIPT` | No | `$OPENCLAW_WORKSPACE/skills/molthreats/scripts/molthreats.py` | Path to molthreats.py |
 

@@ -1,0 +1,410 @@
+{
+  "categories": {
+    "identity": {
+      "title": "Identity & Context",
+      "description": "Help your agent understand who you are and how you work"
+    },
+    "data_sensitivity": {
+      "title": "Data Sensitivity",
+      "description": "Define what data is sensitive and requires protection"
+    },
+    "external_comms": {
+      "title": "External Communications",
+      "description": "Control how your agent communicates on your behalf"
+    },
+    "destructive_actions": {
+      "title": "Destructive Actions",
+      "description": "Set boundaries around deletion and destructive operations"
+    },
+    "data_exfiltration": {
+      "title": "Data Exfiltration",
+      "description": "Control how data can leave your workspace"
+    },
+    "skill_specific": {
+      "title": "Skill-Specific Policies",
+      "description": "Set rules for individual high-risk skills"
+    },
+    "monitoring": {
+      "title": "Monitoring & Enforcement",
+      "description": "Configure how guardrails are monitored and enforced"
+    }
+  },
+  "questions": [
+    {
+      "id": "user_name",
+      "category": "identity",
+      "question": "What should the agent call you?",
+      "help": "This helps the agent maintain appropriate context in communications.",
+      "suggestions": [
+        {"label": "First name", "value": "first_name"},
+        {"label": "Full name", "value": "full_name"},
+        {"label": "Nickname", "value": "nickname"}
+      ],
+      "defaultSuggestion": 0,
+      "allowCustom": true
+    },
+    {
+      "id": "timezone",
+      "category": "identity",
+      "question": "What timezone are you in?",
+      "help": "Used for time-sensitive operations and scheduling.",
+      "suggestions": [
+        {"label": "US Pacific (PT)", "value": "America/Los_Angeles"},
+        {"label": "US Eastern (ET)", "value": "America/New_York"},
+        {"label": "UTC", "value": "UTC"},
+        {"label": "US Central (CT)", "value": "America/Chicago"}
+      ],
+      "defaultSuggestion": 2,
+      "allowCustom": true
+    },
+    {
+      "id": "deletion_policy",
+      "category": "destructive_actions",
+      "question": "How should the agent handle file/data deletion?",
+      "help": "This applies to local files, cloud storage, emails, and other data.",
+      "suggestions": [
+        {"label": "Always ask first (safest)", "value": "always-ask"},
+        {"label": "Ask unless it's a temporary file", "value": "ask-unless-temp"},
+        {"label": "Allowed with confirmation", "value": "allowed-with-confirmation"},
+        {"label": "Use trash/archive instead", "value": "prefer-archive"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "external_comms_policy",
+      "category": "external_comms",
+      "question": "Can the agent send emails, tweets, or messages on your behalf?",
+      "help": "This is a critical security control. Most users prefer drafts-only.",
+      "suggestions": [
+        {"label": "Never - block all external sends", "value": "never"},
+        {"label": "Drafts only - agent prepares, I send", "value": "drafts-only"},
+        {"label": "Ask each time", "value": "ask-each-time"},
+        {"label": "Allowed for trusted channels", "value": "trusted-channels"}
+      ],
+      "defaultSuggestion": 1
+    },
+    {
+      "id": "trusted_channels",
+      "category": "external_comms",
+      "question": "Which communication channels are trusted for automatic sending?",
+      "help": "Only applies if you chose 'trusted-channels' above.",
+      "dependsOn": {"question": "external_comms_policy", "value": "trusted-channels"},
+      "suggestions": [
+        {"label": "Signal only", "value": ["signal"]},
+        {"label": "Signal + Discord", "value": ["signal", "discord"]},
+        {"label": "Internal channels only", "value": ["signal", "discord", "slack"]},
+        {"label": "None", "value": []}
+      ],
+      "defaultSuggestion": 0,
+      "allowCustom": true
+    },
+    {
+      "id": "sensitive_paths",
+      "category": "data_sensitivity",
+      "question": "Are there any directories that should be completely off-limits?",
+      "help": "Agent will never read, list, or access these paths. Use absolute paths.",
+      "suggestions": [
+        {"label": "Financial/tax documents", "value": ["/path/to/finance", "/path/to/taxes"]},
+        {"label": "Personal photos/videos", "value": ["/path/to/photos", "/path/to/videos"]},
+        {"label": "Authentication/credentials", "value": ["/path/to/auth", "/path/to/.ssh"]},
+        {"label": "Custom paths", "value": []}
+      ],
+      "defaultSuggestion": 3,
+      "allowCustom": true
+    },
+    {
+      "id": "sensitive_data_types",
+      "category": "data_sensitivity",
+      "question": "What types of sensitive data should trigger extra caution?",
+      "help": "Agent will avoid storing, logging, or transmitting these in plain text.",
+      "suggestions": [
+        {"label": "Standard set (SSN, passwords, API keys, credit cards)", "value": ["ssn", "password", "api_key", "credit_card", "bank_account"]},
+        {"label": "Minimal (passwords and keys only)", "value": ["password", "api_key", "private_key"]},
+        {"label": "Comprehensive (includes personal health, financial)", "value": ["ssn", "password", "api_key", "credit_card", "bank_account", "health_record", "tax_id", "private_key"]}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "data_exfiltration_policy",
+      "category": "data_exfiltration",
+      "question": "When can the agent upload or share data externally?",
+      "help": "Controls uploads to cloud services, external APIs, etc.",
+      "suggestions": [
+        {"label": "Private workspace only - no external uploads", "value": "private-only"},
+        {"label": "Trusted endpoints only (Google Drive, GitHub)", "value": "trusted-endpoints"},
+        {"label": "Ask each time", "value": "ask-each-time"},
+        {"label": "Allowed with logging", "value": "allowed-with-logging"}
+      ],
+      "defaultSuggestion": 1
+    },
+    {
+      "id": "trusted_upload_endpoints",
+      "category": "data_exfiltration",
+      "question": "Which external services are trusted for uploads?",
+      "help": "Only applies if you chose 'trusted-endpoints' above.",
+      "dependsOn": {"question": "data_exfiltration_policy", "value": "trusted-endpoints"},
+      "suggestions": [
+        {"label": "Google Drive only", "value": ["drive.google.com"]},
+        {"label": "Google Drive + GitHub", "value": ["drive.google.com", "github.com"]},
+        {"label": "Common trusted services", "value": ["drive.google.com", "github.com", "dropbox.com"]},
+        {"label": "Custom list", "value": []}
+      ],
+      "defaultSuggestion": 1,
+      "allowCustom": true
+    },
+    {
+      "id": "group_chat_policy",
+      "category": "external_comms",
+      "question": "What can the agent share in group chats?",
+      "help": "Group chats may include people who shouldn't see your private data.",
+      "suggestions": [
+        {"label": "No personal data at all", "value": "no-personal-data"},
+        {"label": "Minimal - only public info", "value": "minimal"},
+        {"label": "Normal - use judgment", "value": "normal"},
+        {"label": "Full access - same as private", "value": "full"}
+      ],
+      "defaultSuggestion": 1
+    },
+    {
+      "id": "write_containment",
+      "category": "data_sensitivity",
+      "question": "Should file writes be restricted to specific directories?",
+      "help": "Helps prevent accidental modification of important files.",
+      "suggestions": [
+        {"label": "Workspace only", "value": {"restricted": true, "allowedPaths": ["/home/ubuntu/.openclaw/workspace"]}},
+        {"label": "Workspace + temp directories", "value": {"restricted": true, "allowedPaths": ["/home/ubuntu/.openclaw/workspace", "/tmp"]}},
+        {"label": "No restrictions", "value": {"restricted": false, "allowedPaths": []}},
+        {"label": "Custom paths", "value": {"restricted": true, "allowedPaths": []}}
+      ],
+      "defaultSuggestion": 0,
+      "allowCustom": true
+    },
+    {
+      "id": "api_key_access",
+      "category": "data_sensitivity",
+      "question": "Can the agent read API keys from config files?",
+      "help": "Required for many integrations, but increases risk if agent is compromised.",
+      "suggestions": [
+        {"label": "Yes - required for integrations", "value": "allowed"},
+        {"label": "Only for specific services", "value": "selective"},
+        {"label": "Never - I'll provide manually", "value": "never"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "api_key_services",
+      "category": "data_sensitivity",
+      "question": "Which services can the agent access API keys for?",
+      "help": "Only applies if you chose 'selective' above.",
+      "dependsOn": {"question": "api_key_access", "value": "selective"},
+      "suggestions": [
+        {"label": "Google services only", "value": ["google"]},
+        {"label": "Communication platforms", "value": ["signal", "telegram", "discord"]},
+        {"label": "Development tools", "value": ["github", "gitlab"]},
+        {"label": "Custom list", "value": []}
+      ],
+      "defaultSuggestion": 3,
+      "allowCustom": true
+    },
+    {
+      "id": "financial_skills_policy",
+      "category": "skill_specific",
+      "question": "How should financial/trading skills be handled?",
+      "help": "Extra caution for skills that can execute financial transactions.",
+      "suggestions": [
+        {"label": "Blocked - never execute trades", "value": "blocked"},
+        {"label": "Analysis only - no execution", "value": "analysis-only"},
+        {"label": "Allowed with explicit confirmation", "value": "confirm-each"},
+        {"label": "No financial skills installed", "value": "none"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "system_modification_policy",
+      "category": "skill_specific",
+      "question": "Can the agent modify system configuration?",
+      "help": "Includes firewall rules, network settings, service restarts, etc.",
+      "suggestions": [
+        {"label": "Never - ask me to do it manually", "value": "never"},
+        {"label": "Ask first, every time", "value": "always-ask"},
+        {"label": "Allowed for safe changes (config files)", "value": "safe-only"},
+        {"label": "Allowed with logging", "value": "allowed-with-logging"}
+      ],
+      "defaultSuggestion": 1
+    },
+    {
+      "id": "vm_snapshot_policy",
+      "category": "destructive_actions",
+      "question": "Can the agent delete VM snapshots or backups?",
+      "help": "Applies to Proxmox, VMware, or other virtualization platforms.",
+      "dependsOn": {"integration": "proxmox"},
+      "suggestions": [
+        {"label": "Never - snapshots are permanent", "value": "never"},
+        {"label": "Ask first", "value": "ask-first"},
+        {"label": "Allowed for auto-snapshots only", "value": "auto-only"},
+        {"label": "Allowed with confirmation", "value": "confirm"}
+      ],
+      "defaultSuggestion": 1
+    },
+    {
+      "id": "email_deletion_policy",
+      "category": "destructive_actions",
+      "question": "Can the agent delete emails?",
+      "help": "Archive/label is usually safer than permanent deletion.",
+      "dependsOn": {"integration": "gog"},
+      "suggestions": [
+        {"label": "Never delete - archive only", "value": "archive-only"},
+        {"label": "Delete spam/trash only", "value": "spam-only"},
+        {"label": "Ask first for any deletion", "value": "ask-first"},
+        {"label": "Allowed with confirmation", "value": "confirm"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "twitter_posting_policy",
+      "category": "external_comms",
+      "question": "Can the agent post tweets on your behalf?",
+      "help": "High visibility - mistakes are public and permanent.",
+      "dependsOn": {"integration": "bird"},
+      "suggestions": [
+        {"label": "Never - drafts only", "value": "drafts-only"},
+        {"label": "Ask before every tweet", "value": "ask-each"},
+        {"label": "Allowed for scheduled content", "value": "scheduled-only"},
+        {"label": "Allowed with review", "value": "with-review"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "drive_restricted_folders",
+      "category": "data_sensitivity",
+      "question": "Are there Google Drive folders that should be off-limits?",
+      "help": "Agent will never access these folders.",
+      "dependsOn": {"integration": "gog"},
+      "suggestions": [
+        {"label": "Financial/sensitive documents", "value": ["Personal Finance", "Taxes", "Auth", "Loan"]},
+        {"label": "Personal media", "value": ["Pictures", "Videos", "Photos"]},
+        {"label": "Comprehensive restriction", "value": ["Personal Finance", "Taxes", "Auth", "Loan", "Refinance", "Pictures"]},
+        {"label": "Custom list", "value": []}
+      ],
+      "defaultSuggestion": 2,
+      "allowCustom": true
+    },
+    {
+      "id": "drive_write_policy",
+      "category": "data_exfiltration",
+      "question": "Where can the agent write files in Google Drive?",
+      "help": "Containment helps prevent accidental overwrites.",
+      "dependsOn": {"integration": "gog"},
+      "suggestions": [
+        {"label": "OpenClaw folder only", "value": "openclaw-folder"},
+        {"label": "Specific folders I designate", "value": "designated-folders"},
+        {"label": "Anywhere with confirmation", "value": "anywhere-confirm"},
+        {"label": "No restrictions", "value": "unrestricted"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "memory_retention",
+      "category": "data_sensitivity",
+      "question": "How long should the agent retain conversation memory?",
+      "help": "Longer retention = better context, but more data exposure risk.",
+      "suggestions": [
+        {"label": "30 days", "value": "30d"},
+        {"label": "90 days", "value": "90d"},
+        {"label": "1 year", "value": "1y"},
+        {"label": "Forever (manual cleanup)", "value": "forever"}
+      ],
+      "defaultSuggestion": 2
+    },
+    {
+      "id": "sensitive_data_logging",
+      "category": "data_sensitivity",
+      "question": "Should sensitive data be excluded from logs and memory?",
+      "help": "Prevents passwords, keys, etc. from being stored in session history.",
+      "suggestions": [
+        {"label": "Yes - redact sensitive data", "value": "redact"},
+        {"label": "Minimal logging only", "value": "minimal"},
+        {"label": "No restrictions", "value": "unrestricted"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "browser_automation_policy",
+      "category": "impersonation",
+      "question": "Can the agent use browser automation on authenticated sites?",
+      "help": "Browser can access sites where you're logged in - use carefully.",
+      "suggestions": [
+        {"label": "Read-only browsing", "value": "read-only"},
+        {"label": "Forms allowed with confirmation", "value": "forms-confirm"},
+        {"label": "Full automation allowed", "value": "full"},
+        {"label": "Block authenticated sites", "value": "block-auth"}
+      ],
+      "defaultSuggestion": 1
+    },
+    {
+      "id": "code_execution_policy",
+      "category": "system_modification",
+      "question": "Can the agent execute arbitrary code/scripts?",
+      "help": "Powerful but risky - agent can run shell commands.",
+      "suggestions": [
+        {"label": "Sandboxed only", "value": "sandbox-only"},
+        {"label": "Ask before running scripts", "value": "ask-first"},
+        {"label": "Allowed for safe commands", "value": "safe-commands"},
+        {"label": "Full access with logging", "value": "full-logged"}
+      ],
+      "defaultSuggestion": 2
+    },
+    {
+      "id": "subagent_inheritance",
+      "category": "monitoring",
+      "question": "Should sub-agents inherit your guardrails?",
+      "help": "Sub-agents are spawned for specific tasks - should they follow the same rules?",
+      "suggestions": [
+        {"label": "Yes - full inheritance", "value": "full"},
+        {"label": "Partial - core rules only", "value": "partial"},
+        {"label": "Minimal - sub-agents are sandboxed", "value": "minimal"},
+        {"label": "Custom per sub-agent", "value": "custom"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "violation_notification",
+      "category": "monitoring",
+      "question": "How should guardrail violations be handled?",
+      "help": "When the agent attempts something against your rules.",
+      "suggestions": [
+        {"label": "Block and notify immediately", "value": "block-notify"},
+        {"label": "Block and log silently", "value": "block-log"},
+        {"label": "Warn and ask permission", "value": "warn-ask"},
+        {"label": "Log only", "value": "log-only"}
+      ],
+      "defaultSuggestion": 0
+    },
+    {
+      "id": "monitoring_frequency",
+      "category": "monitoring",
+      "question": "How often should guardrails be checked for changes?",
+      "help": "Detects new skills or configuration changes that need review.",
+      "suggestions": [
+        {"label": "Daily", "value": "daily"},
+        {"label": "Weekly", "value": "weekly"},
+        {"label": "On skill install only", "value": "on-install"},
+        {"label": "Manual only", "value": "manual"}
+      ],
+      "defaultSuggestion": 1
+    },
+    {
+      "id": "incident_reporting",
+      "category": "monitoring",
+      "question": "Should security incidents be logged to memory?",
+      "help": "Tracks guardrail violations, blocked actions, etc.",
+      "suggestions": [
+        {"label": "Yes - full incident log", "value": "full"},
+        {"label": "Critical incidents only", "value": "critical-only"},
+        {"label": "Summary only", "value": "summary"},
+        {"label": "No logging", "value": "none"}
+      ],
+      "defaultSuggestion": 0
+    }
+  ]
+}
