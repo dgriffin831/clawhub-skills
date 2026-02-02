@@ -2,6 +2,21 @@
 
 Multi-layered security scanner for OpenClaw agent skill packages. Detects malicious code, evasion techniques, prompt injection, and misaligned behavior through static analysis and optional LLM-powered deep inspection.
 
+## Prerequisites
+
+- **Python 3.10+** — check with `python3 --version`
+- **pip** — check with `pip3 --version` or `python3 -m pip --version`
+
+If pip is not installed:
+```bash
+# Option 1: System package manager (requires sudo)
+sudo apt-get install python3-pip        # Debian/Ubuntu
+brew install python3                     # macOS (includes pip)
+
+# Option 2: Bootstrap pip without sudo
+python3 -m ensurepip --upgrade
+```
+
 ## Quick Start
 
 ```bash

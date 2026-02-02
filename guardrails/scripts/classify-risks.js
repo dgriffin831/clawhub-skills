@@ -159,6 +159,7 @@ function main() {
       // Output classification result
       const result = {
         timestamp: new Date().toISOString(),
+        discovery,
         overallRiskLevel,
         risksByCategory,
         risksBySkill,

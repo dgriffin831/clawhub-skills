@@ -2,6 +2,18 @@
 
 Security scanner for OpenClaw agent memory files. Detects malicious instructions, prompt injection, credential leakage, and other threats embedded in MEMORY.md, daily logs, and workspace configuration files.
 
+## Prerequisites
+
+- **Python 3** — check with `python3 --version`
+- **API key** — requires `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (all scanning is LLM-powered)
+
+No pip install is needed — memory-scan uses only the Python standard library (`urllib`).
+
+```bash
+cp .env.template .env
+# Edit .env with your API key
+```
+
 ## Quick Start
 
 ### On-Demand Scan

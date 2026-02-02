@@ -120,6 +120,32 @@ Guided interview process that discovers your workspace environment, classifies r
 
 ## Getting Started
 
+### Prerequisites
+
+| Dependency | Required by | Check |
+|------------|------------|-------|
+| Python 3.10+ | skill-scan, input-guard, memory-scan | `python3 --version` |
+| pip | skill-scan, input-guard (LLM mode) | `pip3 --version` |
+| Node.js | guardrails | `node --version` |
+| jq | guardrails | `jq --version` |
+| Bash | guardrails, memory-scan | standard on Linux/macOS |
+
+If pip is not installed:
+```bash
+# Option 1: System package manager
+sudo apt-get install python3-pip        # Debian/Ubuntu
+brew install python3                     # macOS (includes pip)
+
+# Option 2: Bootstrap pip without sudo
+python3 -m ensurepip --upgrade
+```
+
+If jq is not installed:
+```bash
+sudo apt-get install jq                  # Debian/Ubuntu
+brew install jq                          # macOS
+```
+
 Each skill is self-contained. Clone the repo and use any skill independently:
 
 ```bash

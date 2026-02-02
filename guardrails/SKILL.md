@@ -10,14 +10,14 @@ Helps users configure comprehensive security guardrails for their OpenClaw works
 **Workflow:**
 1. Run environment discovery: `bash scripts/discover.sh`
 2. Classify risks: `bash scripts/discover.sh | node scripts/classify-risks.js`
-3. Load question bank: `cat templates/questions.json`
+3. Generate tailored questions: `bash scripts/discover.sh | node scripts/classify-risks.js | python3 scripts/generate_questions.py`
 4. **Conduct interactive interview** with the user:
-   - Ask questions from the question bank based on discovered risks
+   - Ask questions from the generated question bank (tailored to discovered environment)
    - Present suggestions for each question
    - Allow custom answers
-   - Skip irrelevant questions (based on dependsOn)
    - Follow up when appropriate
-5. Generate GUARDRAILS.md: `echo '<answers-json>' | node scripts/generate-guardrails.js /path/to/guardrails-config.json`
+5. Generate GUARDRAILS.md: `echo '<json>' | python3 scripts/generate_guardrails_md.py /path/to/guardrails-config.json`
+   - Stdin JSON format: `{"discovery": {...}, "classification": {...}, "answers": {...}}`
 6. **Present the generated GUARDRAILS.md for review**
 7. Ask for confirmation before writing to workspace
 8. Write `GUARDRAILS.md` to workspace root
@@ -62,6 +62,8 @@ Can be run manually or via cron/heartbeat.
 ## Notes
 
 - This skill only helps *create* guardrails - enforcement is up to the agent
-- All scripts use Node.js built-ins only (no npm dependencies)
+- Discovery (`discover.sh`) and classification (`classify-risks.js`) use Node.js built-ins only
+- Question generation and GUARDRAILS.md generation require an LLM — set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
+- Python scripts require the `requests` library (`pip install requests`)
 - Discovery and classification are read-only operations
 - Only `setup` and `review` modes write files, and only with user confirmation

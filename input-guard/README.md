@@ -12,6 +12,23 @@ A defensive security skill that scans untrusted external text for embedded promp
 - **No external dependencies** for pattern scanning — `requests` only needed for `--llm` modes
 - **Optional MoltThreats integration** for community threat reporting
 
+## Prerequisites
+
+- **Python 3** — check with `python3 --version`
+- **pip** (only needed for LLM scanning) — check with `pip3 --version` or `python3 -m pip --version`
+
+Pattern-based scanning uses only the Python standard library and has **zero external dependencies**. pip is only required if you want to install `requests` for `--llm` modes.
+
+If pip is not installed and you need LLM scanning:
+```bash
+# Option 1: System package manager (requires sudo)
+sudo apt-get install python3-pip        # Debian/Ubuntu
+brew install python3                     # macOS (includes pip)
+
+# Option 2: Bootstrap pip without sudo
+python3 -m ensurepip --upgrade
+```
+
 ## Quick Start
 
 ```bash

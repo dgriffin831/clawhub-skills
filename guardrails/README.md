@@ -12,12 +12,23 @@ The guardrails skill helps you create a comprehensive `GUARDRAILS.md` file throu
 4. **Generates** a customized GUARDRAILS.md file
 5. **Monitors** your workspace for changes that need review
 
+## Prerequisites
+
+- **Node.js** — check with `node --version`
+- **Bash** — standard on Linux/macOS
+- **jq** — check with `jq --version`
+
+If jq is not installed:
+```bash
+sudo apt-get install jq                  # Debian/Ubuntu
+brew install jq                          # macOS
+```
+
+No pip install or external Node.js packages are needed — this skill uses only built-in modules.
+
 ## Installation
 
-This skill has no external dependencies - it uses only Node.js and Bash built-ins.
-
 ```bash
-# No installation needed - ready to use
 # Verify scripts are executable
 chmod +x skills/guardrails/scripts/*.sh
 chmod +x skills/guardrails/scripts/*.js
