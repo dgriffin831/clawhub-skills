@@ -11,6 +11,7 @@ import json
 import os
 import re
 import secrets
+import subprocess
 import time
 
 import httpx
@@ -39,6 +40,25 @@ class LLMAnalyzer:
         anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
         if anthropic_key:
             return ("anthropic", anthropic_key, "claude-sonnet-4-5-20250514")
+
+        # Try OpenClaw gateway config
+        try:
+            result = subprocess.run(
+                ["openclaw", "gateway", "config.get"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            config = json.loads(result.stdout)
+
+            if config.get("env", {}).get("OPENAI_API_KEY"):
+                return ("openai", config["env"]["OPENAI_API_KEY"], "gpt-4o-mini")
+
+            if config.get("env", {}).get("ANTHROPIC_API_KEY"):
+                return ("anthropic", config["env"]["ANTHROPIC_API_KEY"], "claude-sonnet-4-5-20250514")
+
+        except Exception:
+            pass
 
         return ("none", "", "")
 
