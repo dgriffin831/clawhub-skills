@@ -230,6 +230,45 @@ To improve detection:
 2. Test against known malicious samples
 3. Update threat categories as new attack vectors emerge
 
+## Uninstalling
+
+### 1. Remove the scheduled cron job (if configured)
+
+If you set up daily scanning with `schedule-scan.sh`:
+
+```bash
+# List cron jobs and find memory-scan-daily
+openclaw cron list
+
+# Disable it (replace <ID> with the job ID)
+openclaw cron update --jobId <ID> --patch '{"enabled": false}'
+```
+
+### 2. Remove quarantine data
+
+If you quarantined any threats, backups are stored in the workspace:
+
+```bash
+rm -rf .memory-scan/
+```
+
+### 3. Remove the skill directory
+
+```bash
+rm -rf skills/memory-scan
+```
+
+### 4. Clean up environment variables
+
+Remove from your `.env` (if no other skill uses them):
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `PROMPTINTEL_API_KEY`
+- `OPENCLAW_ALERT_CHANNEL`
+- `OPENCLAW_ALERT_TO`
+
+memory-scan does not add a section to `AGENTS.md`, so no changes are needed there.
+
 ## Related Skills
 
 - **input-guard** - External input scanning

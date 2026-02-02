@@ -264,6 +264,31 @@ Ensure output is valid JSON:
 bash skills/guardrails/scripts/discover.sh | jq .
 ```
 
+## Uninstalling
+
+### 1. Remove generated workspace files
+
+The `guardrails setup` command creates two files in your workspace root:
+
+```bash
+rm GUARDRAILS.md
+rm guardrails-config.json
+```
+
+### 2. Remove the skill directory
+
+```bash
+rm -rf skills/guardrails
+```
+
+### 3. Clean up environment variables
+
+Remove from your `.env` (if no other skill uses them):
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+
+guardrails does not add a section to `AGENTS.md` or create cron jobs, so no changes are needed there.
+
 ## Contributing
 
 This skill is designed to be extensible. Contributions welcome for:

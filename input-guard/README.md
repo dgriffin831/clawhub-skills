@@ -229,6 +229,33 @@ For evasive cases (LLM-required):
 - **[INTEGRATION.md](INTEGRATION.md)** — Detailed integration guide with workflow examples
 - **[TESTING.md](TESTING.md)** — Eval approach, test categories, and latest results
 
+## Uninstalling
+
+### 1. Remove the AGENTS.md section
+
+During installation, the following section was added to your workspace `AGENTS.md`:
+
+- `## Input Guard — Prompt Injection Scanning`
+
+Delete the entire section (including the workflow, alert format, and MoltThreats reporting subsections).
+
+### 2. Remove the skill directory
+
+```bash
+rm -rf skills/input-guard
+```
+
+### 3. Clean up environment variables
+
+Remove from your `.env` (if no other skill uses them):
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `PROMPTINTEL_API_KEY`
+- `OPENCLAW_ALERT_CHANNEL`
+- `OPENCLAW_ALERT_TO`
+
+input-guard does not create any files in the workspace outside its own directory. The `taxonomy.json` file lives inside the skill directory and is removed with it.
+
 ## Credits
 
 Inspired by [prompt-guard](https://github.com/seojoonkim) by seojoonkim.

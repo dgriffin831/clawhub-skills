@@ -161,6 +161,40 @@ python3 evals/eval_runner.py --llm       # With LLM layers
 - `2` - HIGH risk
 - `3` - CRITICAL risk
 
+## Uninstalling
+
+### 1. Remove the AGENTS.md section
+
+During installation, one of two sections was added to your workspace `AGENTS.md`:
+
+- `## Skill-Scan — Automatic Pre-Install Security Scanning` (Option A), or
+- `## Skill-Scan — On-Demand Skill Security Scanning` (Option B)
+
+Delete whichever section was added.
+
+### 2. Uninstall the Python package
+
+```bash
+pip uninstall skill-scan
+```
+
+### 3. Remove the skill directory
+
+```bash
+rm -rf skills/skill-scan
+```
+
+### 4. Clean up environment variables
+
+Remove from your `.env` (if no other skill uses them):
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `PROMPTINTEL_API_KEY`
+- `OPENCLAW_ALERT_CHANNEL`
+- `OPENCLAW_ALERT_TO`
+
+skill-scan does not create any files in the workspace outside its own directory.
+
 ## Related Skills
 
 - **input-guard** - External input scanning
