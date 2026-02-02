@@ -121,8 +121,6 @@ input-guard/
 ├── CHANGELOG.md                # Version history
 ├── taxonomy.json               # Shipped MoltThreats taxonomy (offline LLM scanning)
 ├── requirements.txt            # Python dependencies (requests)
-├── .env.template               # Environment variable template
-├── .gitignore
 ├── scripts/
 │   ├── scan.py                 # Core scanner (Python 3)
 │   ├── scan.sh                 # Shell wrapper
@@ -145,9 +143,7 @@ cd input-guard
 # Install dependencies (only needed for LLM scanning)
 pip install -r requirements.txt
 
-# Set up environment variables
-cp .env.template .env
-# Edit .env with your API keys
+# Set up environment variables (create .env in the repo root with your API keys)
 ```
 
 ### Environment Variables

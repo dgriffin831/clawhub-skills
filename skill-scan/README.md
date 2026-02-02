@@ -114,6 +114,20 @@ Provider auto-detected from environment:
 - `OPENAI_API_KEY` -> gpt-4o-mini
 - `ANTHROPIC_API_KEY` -> claude-sonnet-4-5
 
+### Environment Variables
+
+Create a `.env` file in the repository root with any needed keys:
+
+| Variable | Required For | Description |
+|----------|-------------|-------------|
+| `OPENAI_API_KEY` | LLM scanning | OpenAI API key (uses gpt-4o-mini) |
+| `ANTHROPIC_API_KEY` | LLM scanning | Anthropic API key (alternative to OpenAI) |
+| `PROMPTINTEL_API_KEY` | MoltThreats integration | PromptIntel API key |
+| `OPENCLAW_ALERT_CHANNEL` | Alerts | OpenClaw channel name for alerts |
+| `OPENCLAW_ALERT_TO` | Alerts | Optional recipient/target for channels that require one |
+
+Static analysis requires **no keys** — it works out of the box.
+
 ## Files
 
 ```

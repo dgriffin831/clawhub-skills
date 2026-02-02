@@ -9,10 +9,17 @@ Security scanner for OpenClaw agent memory files. Detects malicious instructions
 
 No pip install is needed — memory-scan uses only the Python standard library (`urllib`).
 
-```bash
-cp .env.template .env
-# Edit .env with your API key (only needed for --allow-remote)
-```
+### Environment Variables
+
+Create a `.env` file in the repository root with any needed keys:
+
+| Variable | Required For | Description |
+|----------|-------------|-------------|
+| `OPENAI_API_KEY` | `--allow-remote` | OpenAI API key (uses gpt-4o-mini) |
+| `ANTHROPIC_API_KEY` | `--allow-remote` | Anthropic API key (alternative to OpenAI) |
+| `PROMPTINTEL_API_KEY` | Taxonomy refresh, reporting | MoltThreats / PromptIntel API key |
+
+Pattern-based scanning requires **no keys** — it works out of the box with Python 3.
 
 ## Quick Start
 
@@ -165,7 +172,6 @@ skills/memory-scan/
 ├── SKILL.md                      # Skill documentation
 ├── TESTING.md                    # Eval approach and results
 ├── README.md                     # This file
-├── .env.template                 # Environment variable template
 ├── docs/
 │   └── detection-prompt.md       # LLM detection prompt template
 ├── evals/
