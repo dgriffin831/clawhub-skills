@@ -65,7 +65,7 @@ def run_scan(text):
         tmp_path = f.name
 
     try:
-        cmd = [sys.executable, str(SCAN_PY), "--file", tmp_path, "--json"]
+        cmd = [sys.executable, str(SCAN_PY), "--file", tmp_path, "--json", "--allow-remote"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         stdout = result.stdout.strip()
 

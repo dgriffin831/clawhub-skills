@@ -132,7 +132,7 @@ Creates:
 
 ## Files
 
-- `scripts/memory-scan.py` - Main scanner (LLM-powered)
+- `scripts/memory-scan.py` - Main scanner (local patterns + optional LLM with `--allow-remote`)
 - `scripts/schedule-scan.sh` - Create cron job for daily scans
 - `scripts/quarantine.py` - Quarantine detected threats
 - `docs/detection-prompt.md` - LLM detection prompt template

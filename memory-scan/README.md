@@ -5,23 +5,30 @@ Security scanner for OpenClaw agent memory files. Detects malicious instructions
 ## Prerequisites
 
 - **Python 3** — check with `python3 --version`
-- **API key** — requires `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (all scanning is LLM-powered)
+- **API key** (for `--allow-remote` mode) — requires `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
 
 No pip install is needed — memory-scan uses only the Python standard library (`urllib`).
 
 ```bash
 cp .env.template .env
-# Edit .env with your API key
+# Edit .env with your API key (only needed for --allow-remote)
 ```
 
 ## Quick Start
 
 ### On-Demand Scan
 
-Scan all memory files:
+Scan all memory files (local pattern matching only):
 ```bash
 python3 skills/memory-scan/scripts/memory-scan.py
 ```
+
+Scan with LLM analysis for deeper detection (redacted content sent to LLM):
+```bash
+python3 skills/memory-scan/scripts/memory-scan.py --allow-remote
+```
+
+> **Note:** Without `--allow-remote`, only local pattern matching runs (fast, no API calls). With `--allow-remote`, content is redacted and sent to an LLM for deeper analysis of prompt injection, prompt stealing, and other subtle threats.
 
 ### Scheduled Monitoring
 
@@ -33,7 +40,7 @@ bash skills/memory-scan/scripts/schedule-scan.sh
 ## What It Does
 
 - **Scans** MEMORY.md, daily logs (last 30 days), and workspace config files
-- **Detects** threats using local patterns (optional redacted LLM analysis with `--allow-remote`)
+- **Detects** threats using local pattern matching (add `--allow-remote` for deeper LLM analysis on redacted content)
 - **Alerts** via configured OpenClaw channel on MEDIUM/HIGH/CRITICAL findings
 - **Quarantines** threats with backup + redaction (opt-in)
 
@@ -165,7 +172,7 @@ skills/memory-scan/
 │   ├── cases.json                # Test cases (safe, malicious, prompt_stealing)
 │   └── run.py                    # Eval runner
 └── scripts/
-    ├── memory-scan.py           # Main scanner (LLM-powered)
+    ├── memory-scan.py           # Main scanner (local patterns + optional LLM)
     ├── schedule-scan.sh         # Create cron job
     └── quarantine.py            # Quarantine detected threats
 ```

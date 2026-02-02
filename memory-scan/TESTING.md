@@ -2,13 +2,18 @@
 
 ## Eval Approach
 
-Memory Scan uses LLM-powered detection exclusively — there's no pattern-matching layer. Every eval case is sent through the full LLM analysis pipeline (gpt-4o-mini or claude-sonnet-4-5) against the detection prompt in `docs/detection-prompt.md`.
+Memory Scan has two detection layers:
+
+1. **Local pattern matching** (always runs) — fast regex-based checks for instruction overrides, prompt extraction language, API key patterns, and private key material
+2. **Remote LLM analysis** (opt-in with `--allow-remote`) — sends redacted content to an LLM (gpt-4o-mini or claude-sonnet-4-5) for deeper analysis against the detection prompt in `docs/detection-prompt.md`
+
+The evals test **both layers together** by passing `--allow-remote`. Without this flag, only local patterns run — which will miss most prompt stealing and subtle injection attacks.
 
 Each test case defines:
 - A markdown memory file fragment (the content to scan)
 - An expected severity range (`expected_min_severity` to `expected_max_severity`)
 
-The eval runner writes each case to a temp file, runs `memory-scan.py --file --json`, and checks if the returned severity falls within the expected range.
+The eval runner writes each case to a temp file, runs `memory-scan.py --file --json --allow-remote`, and checks if the returned severity falls within the expected range.
 
 ### Test Categories
 
@@ -31,7 +36,7 @@ The detection prompt in `docs/detection-prompt.md` includes explicit guidance an
 ```bash
 # Setup
 cp .env.template .env
-# Edit .env with your API keys (required — all tests use LLM)
+# Edit .env with your API keys (required — evals use --allow-remote for LLM analysis)
 
 # Run all tests
 python3 evals/run.py
@@ -121,7 +126,7 @@ The `text` field contains markdown formatted as agent memory — headers, contex
 
 ### LLM Variability
 
-Since all detection is LLM-powered, results may vary slightly between runs. The expected severity ranges account for this — most cases accept HIGH through CRITICAL. Safe cases accept SAFE through LOW to tolerate minor LLM scoring differences.
+Since the evals run with `--allow-remote`, results may vary slightly between runs due to LLM non-determinism. The expected severity ranges account for this — most cases accept HIGH through CRITICAL. Safe cases accept SAFE through LOW to tolerate minor LLM scoring differences.
 
 ## Improving Detection
 
