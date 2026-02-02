@@ -9,8 +9,8 @@ Helps users configure comprehensive security guardrails for their OpenClaw works
 
 **Workflow:**
 1. Run environment discovery: `bash scripts/discover.sh`
-2. Classify risks: `bash scripts/discover.sh | node scripts/classify-risks.js`
-3. Generate tailored questions: `bash scripts/discover.sh | node scripts/classify-risks.js | python3 scripts/generate_questions.py`
+2. Classify risks: `bash scripts/discover.sh | python3 scripts/classify-risks.py`
+3. Generate tailored questions: `bash scripts/discover.sh | python3 scripts/classify-risks.py | python3 scripts/generate_questions.py`
 4. **Conduct interactive interview** with the user:
    - Ask questions from the generated question bank (tailored to discovered environment)
    - Present suggestions for each question
@@ -62,7 +62,7 @@ Can be run manually or via cron/heartbeat.
 ## Notes
 
 - This skill only helps *create* guardrails - enforcement is up to the agent
-- Discovery (`discover.sh`) and classification (`classify-risks.js`) use Node.js built-ins only
+- Discovery (`discover.sh`) uses bash + jq; classification (`classify-risks.py`) uses Python standard library only
 - Question generation and GUARDRAILS.md generation require an LLM — set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
 - Python scripts require the `requests` library (`pip install requests`)
 - Discovery and classification are read-only operations

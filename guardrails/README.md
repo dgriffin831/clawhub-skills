@@ -14,7 +14,7 @@ The guardrails skill helps you create a comprehensive `GUARDRAILS.md` file throu
 
 ## Prerequisites
 
-- **Node.js** — check with `node --version`
+- **Python 3** — check with `python3 --version`
 - **Bash** — standard on Linux/macOS
 - **jq** — check with `jq --version`
 
@@ -24,14 +24,19 @@ sudo apt-get install jq                  # Debian/Ubuntu
 brew install jq                          # macOS
 ```
 
-No pip install or external Node.js packages are needed — this skill uses only built-in modules.
+Python scripts that call LLM providers require `requests`:
+```bash
+python3 -m pip install requests
+```
+
+No external Node.js packages are used.
 
 ## Installation
 
 ```bash
 # Verify scripts are executable
 chmod +x skills/guardrails/scripts/*.sh
-chmod +x skills/guardrails/scripts/*.js
+chmod +x skills/guardrails/scripts/*.py
 ```
 
 ## Usage
@@ -86,8 +91,8 @@ skills/guardrails/
 ├── SKILL.md                    # Agent instructions (3 modes)
 ├── scripts/
 │   ├── discover.sh             # Environment scanner (bash + jq)
-│   ├── classify-risks.js       # Risk categorizer (Node.js)
-│   ├── generate-guardrails.js  # GUARDRAILS.md generator (Node.js)
+│   ├── classify-risks.py       # Risk categorizer (Python)
+│   ├── generate_guardrails_md.py  # GUARDRAILS.md generator (Python)
 │   └── monitor.sh              # Change detector (bash + jq)
 ├── templates/
 │   ├── guardrails-template.md  # Markdown template with placeholders
@@ -102,16 +107,16 @@ skills/guardrails/
 
 **Setup Mode:**
 ```
-discover.sh → classify-risks.js → questions.json
+discover.sh → classify-risks.py → questions.json
     ↓
 agent conducts interview
     ↓
-generate-guardrails.js → GUARDRAILS.md + guardrails-config.json
+generate_guardrails_md.py → GUARDRAILS.md + guardrails-config.json
 ```
 
 **Review Mode:**
 ```
-discover.sh → classify-risks.js
+discover.sh → classify-risks.py
     ↓
 compare against guardrails-config.json
     ↓
@@ -120,7 +125,7 @@ ask about gaps only → update if needed
 
 **Monitor Mode:**
 ```
-discover.sh → classify-risks.js → compare → check memory
+discover.sh → classify-risks.py → compare → check memory
     ↓
 JSON report (ok / needs-attention / review-recommended)
 ```
@@ -178,27 +183,28 @@ Edit `templates/questions.json`:
 
 ### Adding New Risk Categories
 
-Edit `scripts/classify-risks.js`:
+Edit `scripts/classify-risks.py`:
 
-```javascript
-const RISK_CATEGORIES = {
-  my_category: {
-    keywords: ['word1', 'word2', 'phrase'],
-    description: 'What this category means'
-  }
-};
+```python
+RISK_CATEGORIES = {
+    "my_category": {
+        "keywords": ["word1", "word2", "phrase"],
+        "description": "What this category means",
+    },
+}
 ```
 
 ### Customizing the Template
 
 Edit `templates/guardrails-template.md` and add placeholders like `{{MY_SECTION}}`.
 
-Then update `scripts/generate-guardrails.js` to generate that section:
+Then update `scripts/generate_guardrails_md.py` to generate that section:
 
-```javascript
-const replacements = {
-  '{{MY_SECTION}}': generateMySection(answers)
-};
+```python
+def _default_replacements(discovery, classification, answers):
+    return {
+        "{{MY_SECTION}}": generate_my_section(answers),
+    }
 ```
 
 ## Files Generated
@@ -222,7 +228,7 @@ Machine-readable config for monitoring:
 
 ## Design Principles
 
-1. **No external dependencies** - Works anywhere Node.js runs
+1. **No external Node.js dependencies** - discovery/classification use bash + Python standard library
 2. **Graceful degradation** - Missing files/skills don't break anything
 3. **Stdout/stderr separation** - Data on stdout, progress on stderr
 4. **Idempotent** - Safe to run multiple times
@@ -246,7 +252,14 @@ brew install jq
 
 ```bash
 chmod +x skills/guardrails/scripts/*.sh
-chmod +x skills/guardrails/scripts/*.js
+chmod +x skills/guardrails/scripts/*.py
+```
+
+### "ModuleNotFoundError: No module named 'requests'"
+
+Install the dependency:
+```bash
+python3 -m pip install requests
 ```
 
 ### discover.sh fails

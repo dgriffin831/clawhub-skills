@@ -33,7 +33,7 @@ run_discovery() {
 
 run_classification() {
     >&2 echo "  🔍 Classifying risks..."
-    node "$SCRIPT_DIR/classify-risks.js" 2>/dev/null
+    python3 "$SCRIPT_DIR/classify-risks.py" 2>/dev/null
 }
 
 # Portable mtime/epoch helpers (GNU/BSD/macOS)
